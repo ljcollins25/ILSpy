@@ -116,7 +116,14 @@ namespace ICSharpCode.ILSpyX
 			var localStream = stream;
 			this.lazyLoadingTask = new Lazy<Task<LoadResult>>(
 				() => {
-					var task = Task.Run(() => LoadAsync(localStream));
+					// On single-threaded wasm there is no thread to offload to, and consumers
+					// that block on the load task (Task.Wait uses Monitor) would throw
+					// PlatformNotSupportedException. Run the load inline instead: file IO on
+					// the in-memory VFS completes synchronously, so the task is already
+					// finished by the time any synchronous caller asks for its result.
+					var task = OperatingSystem.IsBrowser()
+						? LoadAsync(localStream)
+						: Task.Run(() => LoadAsync(localStream));
 					task.ContinueWith(static (_, state) => ((LoadedAssembly)state!).RaiseLoaded(),
 						this, TaskScheduler.Default);
 					return task;

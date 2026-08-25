@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <!-- net10.0-browser, not net11.0-browser: the .NET 11 preview wasm workload links with
+         Emscripten 6.x + wasm exceptions, for which SkiaSharp (Avalonia's renderer) ships no
+         static library yet; the .NET 10 workload uses Emscripten 3.1.56, which SkiaSharp
+         supports. The accompanying global.json pins the .NET 10 SDK for this directory. -->
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ICSharpCode.ILSpy.Browser</RootNamespace>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- ILSpy.csproj is an executable (the desktop head), but this project consumes its
+         output purely as a library; suppress NETSDK1150, which otherwise refuses an
+         exe-to-exe reference from a self-contained (wasm) app. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+    <!-- The preview SDK's ApplyCompressionNegotiation task crashes on the duplicate asset
+         the VFS trait creates for the sample assembly below; precompressed assets are of
+         no value for a local prototype anyway. -->
+    <CompressionEnabled>false</CompressionEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ILSpy\ILSpy.csproj" />
+  </ItemGroup>
+
+  <!-- Sample assembly served as a static web asset; main.js downloads it into the
+       emscripten virtual file system before Main runs and passes its VFS path as a
+       command-line argument, so the normal AssembliesToLoad startup path opens it like
+       a file on disk. The file is physically copied into wwwroot because the dev server
+       serves assets linked from outside wwwroot unreliably (empty bodies), and
+       WasmFilesToIncludeInFileSystem trips the SDK over the same linked-asset handling.
+       Note: static web assets are discovered at evaluation time, so on a fresh clone the
+       sample is picked up from the second build onwards. -->
+  <Target Name="StageSampleAssembly" BeforeTargets="AssignTargetPaths">
+    <Copy SourceFiles="..\ICSharpCode.Decompiler\bin\$(Configuration)\netstandard2.0\ICSharpCode.Decompiler.dll"
+          DestinationFolder="wwwroot\samples"
+          SkipUnchangedFiles="true"
+          Condition="Exists('..\ICSharpCode.Decompiler\bin\$(Configuration)\netstandard2.0\ICSharpCode.Decompiler.dll')" />
+  </Target>
+</Project>

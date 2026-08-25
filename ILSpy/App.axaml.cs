@@ -119,6 +119,29 @@ namespace ICSharpCode.ILSpy
 				// letting a second process start. No-op when single-instance is not in force.
 				SingleInstance.NewInstanceDetected += OnNewInstanceDetected;
 			}
+			else if (ApplicationLifetime is ISingleViewApplicationLifetime singleView)
+			{
+				// Windowless host (browser/WebAssembly): a single root view instead of a
+				// MainWindow. StartupErrorWindow is window-bound, so composition failures are
+				// surfaced as plain text in the view slot.
+				Avalonia.Controls.Control? mainView = null;
+				try
+				{
+					if (Composition?.GetExport<ViewModels.MainWindowViewModel>() is { } viewModel)
+						mainView = new MainView(viewModel);
+				}
+				catch (Exception ex)
+				{
+					StartupExceptions.Items.Add(new ExceptionData(ex));
+				}
+
+				singleView.MainView = mainView ?? new Avalonia.Controls.ScrollViewer {
+					Content = new Avalonia.Controls.SelectableTextBlock {
+						Margin = new Thickness(16),
+						Text = "ILSpy failed to start:\n\n" + StartupExceptions.Format()
+					}
+				};
+			}
 
 			base.OnFrameworkInitializationCompleted();
 		}

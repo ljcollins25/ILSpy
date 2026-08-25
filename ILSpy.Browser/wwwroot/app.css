@@ -1,0 +1,18 @@
+html, body {
+    height: 100%;
+}
+
+#out {
+    width: 100vw;
+    height: 100vh;
+}
+
+#splash {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-family: system-ui, sans-serif;
+    font-size: 1.2rem;
+    color: #666;
+}

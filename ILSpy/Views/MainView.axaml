@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ICSharpCode.ILSpy.ViewModels"
+             xmlns:local="using:ICSharpCode.ILSpy"
+             xmlns:dock="using:Dock.Avalonia.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="ICSharpCode.ILSpy.Views.MainView"
+             x:DataType="vm:MainWindowViewModel"
+             UseLayoutRounding="True">
+
+	<Design.DataContext>
+		<vm:MainWindowViewModel />
+	</Design.DataContext>
+
+	<UserControl.KeyBindings>
+		<!-- Same navigation/search gestures as MainWindow; Ctrl+W is intentionally omitted
+		     because the hosting browser claims it for "close tab". -->
+		<KeyBinding Gesture="Alt+Left" Command="{Binding DockWorkspace.NavigateBackCommand}" />
+		<KeyBinding Gesture="Alt+Right" Command="{Binding DockWorkspace.NavigateForwardCommand}" />
+		<KeyBinding Gesture="Ctrl+Shift+F" Command="{Binding DockWorkspace.ShowSearchCommand}" />
+		<KeyBinding Gesture="Ctrl+E" Command="{Binding DockWorkspace.ShowSearchCommand}" />
+	</UserControl.KeyBindings>
+
+	<DockPanel>
+		<!-- No NativeMenuBar here: the main menu attaches to a Window, which a single-view
+		     lifetime does not have. The toolbar carries the essential commands. -->
+		<local:MainToolBar DockPanel.Dock="Top" />
+
+		<dock:DockControl Layout="{Binding DockLayout}" />
+	</DockPanel>
+</UserControl>
