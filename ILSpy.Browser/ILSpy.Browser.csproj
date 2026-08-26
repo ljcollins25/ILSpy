@@ -15,10 +15,22 @@
          output purely as a library; suppress NETSDK1150, which otherwise refuses an
          exe-to-exe reference from a self-contained (wasm) app. -->
     <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
-    <!-- The preview SDK's ApplyCompressionNegotiation task crashes on the duplicate asset
-         the VFS trait creates for the sample assembly below; precompressed assets are of
-         no value for a local prototype anyway. -->
-    <CompressionEnabled>false</CompressionEnabled>
+    <!-- Precompressed assets are of no value for the local dev loop; publish keeps
+         compression on so a static host can serve .br/.gz. -->
+    <CompressionEnabled Condition="'$(Configuration)' == 'Debug'">false</CompressionEnabled>
+    <!-- No trimming by default: ILSpy composes its UI via System.Composition attribute
+         scanning and resolves language/tree/command implementations reflectively; the
+         trimmer cannot see those roots and produces a silently gutted app. The payload is
+         larger, but the published output stays a faithful build.
+         Opt-in ahead-of-time compilation for publish: -p:RunAOTCompilation=true. The wasm
+         SDK refuses AOT without trimming, so that mode uses TrimMode=partial: only
+         assemblies that declare themselves trimmable (the BCL) are trimmed, and ILSpy /
+         Avalonia / MEF assemblies are kept whole. These are set here rather than passed as
+         -p: globals because global PublishTrimmed leaks into the referenced netstandard2.0
+         projects, which cannot be trimmed (NETSDK1124). -->
+    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true'">true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(RunAOTCompilation)' != 'true'">false</PublishTrimmed>
+    <TrimMode Condition="'$(RunAOTCompilation)' == 'true'">partial</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
