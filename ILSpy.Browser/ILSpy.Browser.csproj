@@ -18,20 +18,38 @@
     <!-- Precompressed assets are of no value for the local dev loop; publish keeps
          compression on so a static host can serve .br/.gz. -->
     <CompressionEnabled Condition="'$(Configuration)' == 'Debug'">false</CompressionEnabled>
-    <!-- No trimming by default: ILSpy composes its UI via System.Composition attribute
-         scanning and resolves language/tree/command implementations reflectively; the
-         trimmer cannot see those roots and produces a silently gutted app. The payload is
-         larger, but the published output stays a faithful build.
-         Opt-in ahead-of-time compilation for publish: -p:RunAOTCompilation=true. The wasm
-         SDK refuses AOT without trimming, so that mode uses TrimMode=partial: only
-         assemblies that declare themselves trimmable (the BCL) are trimmed, and ILSpy /
-         Avalonia / MEF assemblies are kept whole. These are set here rather than passed as
-         -p: globals because global PublishTrimmed leaks into the referenced netstandard2.0
-         projects, which cannot be trimmed (NETSDK1124). -->
-    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true'">true</PublishTrimmed>
-    <PublishTrimmed Condition="'$(RunAOTCompilation)' != 'true'">false</PublishTrimmed>
-    <TrimMode Condition="'$(RunAOTCompilation)' == 'true'">partial</TrimMode>
+    <!-- No trimming by default; -p:ILSpyBrowserTrim=true (or AOT, which requires trimming)
+         turns on full trimming with the app assemblies rooted wholesale below. The custom
+         switch exists because a global -p:PublishTrimmed leaks into the referenced
+         netstandard2.0 projects, which cannot be trimmed (NETSDK1124).
+         Opt-in ahead-of-time compilation for publish: -p:RunAOTCompilation=true. -->
+    <_ILSpyBrowserTrimEffective Condition="'$(RunAOTCompilation)' == 'true' or '$(ILSpyBrowserTrim)' == 'true'">true</_ILSpyBrowserTrimEffective>
+    <PublishTrimmed Condition="'$(_ILSpyBrowserTrimEffective)' == 'true'">true</PublishTrimmed>
+    <PublishTrimmed Condition="'$(_ILSpyBrowserTrimEffective)' != 'true'">false</PublishTrimmed>
+    <!-- Trim-analysis warnings are numerous and third-party; this is an experimental
+         publish mode, so keep them out of the way. -->
+    <SuppressTrimAnalysisWarnings Condition="'$(_ILSpyBrowserTrimEffective)' == 'true'">true</SuppressTrimAnalysisWarnings>
+    <!-- After AOT compilation the IL bodies of AOT'd methods are dead weight in the
+         managed assemblies; stripping them shrinks the assembly payload. Methods the AOT
+         compiler skipped keep their IL and still run on the interpreter. -->
+    <WasmStripILAfterAOT Condition="'$(RunAOTCompilation)' == 'true'">true</WasmStripILAfterAOT>
   </PropertyGroup>
+
+  <!-- Trimmer roots. AppComposition builds the MEF container from exactly ILSpy.dll +
+       ICSharpCode.ILSpyX.dll (plugins do not exist in the browser), and parts are
+       discovered reflectively, invisible to the trimmer; rooting those assemblies whole
+       keeps every part, its importing constructor, and everything they statically
+       reference. The decompiler assemblies are the product itself: keep them faithful
+       rather than risk the trimmer removing rarely-hit paths. Everything else (BCL,
+       Avalonia, Dock, editor, transitive packages) trims for real - which also deletes
+       assemblies nothing references anymore (TextMateSharp and friends). -->
+  <ItemGroup Condition="'$(_ILSpyBrowserTrimEffective)' == 'true'">
+    <TrimmerRootAssembly Include="ILSpy" />
+    <TrimmerRootAssembly Include="ILSpy.Browser" />
+    <TrimmerRootAssembly Include="ICSharpCode.ILSpyX" />
+    <TrimmerRootAssembly Include="ICSharpCode.Decompiler" />
+    <TrimmerRootAssembly Include="ICSharpCode.BamlDecompiler" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Browser" />

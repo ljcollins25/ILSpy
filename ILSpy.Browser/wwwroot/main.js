@@ -12,8 +12,10 @@ const dotnetRuntime = await dotnet
         return (async () => {
             for (let attempt = 0; ; attempt++) {
                 try {
+                    // Default cache mode: assets are fingerprinted and served with
+                    // long-lived immutable caching, so repeat visits load from the
+                    // browser cache without any requests.
                     const response = await fetch(defaultUri, {
-                        cache: 'no-cache',
                         integrity: integrity || undefined
                     });
                     if (response.ok || attempt >= 9) {
