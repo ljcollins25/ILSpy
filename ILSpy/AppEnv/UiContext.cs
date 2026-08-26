@@ -35,6 +35,22 @@ namespace ICSharpCode.ILSpy.AppEnv
 		public static Window? MainWindow
 			=> (Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
 
+		/// <summary>
+		/// The top-level visual hosting the UI: the main window on desktop, or the TopLevel
+		/// wrapping the single root view (browser/WebAssembly). Use this instead of
+		/// <see cref="MainWindow"/> for services that hang off any TopLevel, like
+		/// <see cref="TopLevel.StorageProvider"/>. Null at design time / before startup.
+		/// </summary>
+		public static TopLevel? MainTopLevel {
+			get {
+				if (MainWindow is { } window)
+					return window;
+				if (Application.Current?.ApplicationLifetime is ISingleViewApplicationLifetime { MainView: { } view })
+					return TopLevel.GetTopLevel(view);
+				return null;
+			}
+		}
+
 		/// <summary>The main window's clipboard, or null when unavailable.</summary>
 		public static IClipboard? Clipboard => MainWindow?.Clipboard;
 

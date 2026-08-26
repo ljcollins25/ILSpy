@@ -60,7 +60,9 @@ namespace ICSharpCode.ILSpy.Commands
 				return;
 			}
 
-			var owner = UiContext.MainWindow;
+			// MainTopLevel, not MainWindow: the single-view (browser) lifetime has no window,
+			// but its TopLevel still provides a storage provider (an HTML file input there).
+			var owner = UiContext.MainTopLevel;
 			if (owner == null)
 				return;
 
@@ -77,12 +79,16 @@ namespace ICSharpCode.ILSpy.Commands
 				},
 			});
 
-			var picked = files
-				.Select(f => f.TryGetLocalPath())
-				.Where(p => !string.IsNullOrEmpty(p))
-				.ToArray()!;
-			if (picked.Length > 0)
-				assemblyTreeModel.OpenFiles(picked!);
+			var picked = new List<string>();
+			foreach (var file in files)
+			{
+				// Local path on desktop; on stream-only hosts (browser) the content is
+				// copied into the virtual file system and that path is opened instead.
+				if (await FilePickers.GetOpenablePathAsync(file) is { } path)
+					picked.Add(path);
+			}
+			if (picked.Count > 0)
+				assemblyTreeModel.OpenFiles(picked.ToArray());
 		}
 	}
 

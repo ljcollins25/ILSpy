@@ -104,6 +104,44 @@ namespace ICSharpCode.ILSpy.Commands
 			return folders[0].TryGetLocalPath();
 		}
 
+		/// <summary>
+		/// Resolves a picked file to a path the assembly loaders can <see cref="File.OpenRead"/>.
+		/// On desktop that is the file's own local path. On hosts whose picked files are
+		/// stream-only (browser/WebAssembly), the content is copied into an uploads directory
+		/// in the in-memory virtual file system and that path is returned. Returns null when
+		/// the file has no local path and its content cannot be read.
+		/// </summary>
+		public static async Task<string?> GetOpenablePathAsync(IStorageFile file)
+		{
+			if (file.TryGetLocalPath() is { } localPath)
+				return localPath;
+
+			try
+			{
+				const string uploadsDirectory = "/uploads";
+				Directory.CreateDirectory(uploadsDirectory);
+				// Uniquify instead of overwriting: the same-named file may already be open in
+				// the assembly list, and its loaded metadata maps the old content.
+				var target = Path.Combine(uploadsDirectory, file.Name);
+				for (int i = 2; File.Exists(target); i++)
+				{
+					target = Path.Combine(uploadsDirectory,
+						$"{Path.GetFileNameWithoutExtension(file.Name)} ({i}){Path.GetExtension(file.Name)}");
+				}
+
+				await using (var source = await file.OpenReadAsync())
+				await using (var destination = File.Create(target))
+				{
+					await source.CopyToAsync(destination);
+				}
+				return target;
+			}
+			catch (System.Exception)
+			{
+				return null;
+			}
+		}
+
 		/// <summary>"PNG (*.png)|*.png|All files|*.*" → two file types.</summary>
 		internal static IReadOnlyList<FilePickerFileType> ParseFilter(string filter)
 		{
