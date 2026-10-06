@@ -8,17 +8,11 @@
 param([switch]$Aot)
 $ErrorActionPreference = 'Stop'
 
-# Prefer the user-local dotnet install: it carries the SDK 10 wasm-tools workload this
-# project needs (the machine-wide SDK typically does not).
-$localDotnet = Join-Path $env:LOCALAPPDATA 'Microsoft\dotnet'
-if (Test-Path (Join-Path $localDotnet 'dotnet.exe')) {
-    $env:DOTNET_ROOT = $localDotnet
-    $env:PATH = "$localDotnet;$env:PATH"
-}
-
+# No wasm-tools workload is needed: build/NoWorkloadWasm.props fetches the WebAssembly toolchain
+# packs from NuGet. (For a static site ready for GitHub Pages / Workers use build-static.sh.)
 Set-Location $PSScriptRoot
 if ($Aot) {
-    dotnet publish ILSpy.Browser.csproj -c Release -p:RunAOTCompilation=true -p:TreatWarningsAsErrors=false -o bin\Release\publish-aot
+    dotnet publish ILSpy.Browser.csproj -c Release -p:NoWorkloadWasmAot=true -p:TreatWarningsAsErrors=false -p:IntermediateOutputPath=obj/aot/ -o bin\Release\publish-aot
     $out = Join-Path $PSScriptRoot 'bin\Release\publish-aot\wwwroot'
 }
 else {

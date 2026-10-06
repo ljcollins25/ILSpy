@@ -1,2 +1,3 @@
 # Build-staged sample assembly (see StageSampleAssembly in ILSpy.Browser.csproj).
 wwwroot/samples/
+tools/node_modules/
