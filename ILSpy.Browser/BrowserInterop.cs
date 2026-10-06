@@ -23,6 +23,8 @@ using Avalonia.Threading;
 
 using ICSharpCode.ILSpy.AppEnv;
 using ICSharpCode.ILSpy.AssemblyTree;
+using ICSharpCode.ILSpy.Docking;
+using ICSharpCode.ILSpy.TextView;
 
 namespace ICSharpCode.ILSpy.Browser
 {
@@ -44,6 +46,18 @@ namespace ICSharpCode.ILSpy.Browser
 			Dispatcher.UIThread.Post(() => {
 				AppComposition.TryGetExport<AssemblyTreeModel>()?.OpenFiles(paths);
 			});
+		}
+
+		/// <summary>
+		/// The text of the active decompiler tab, or an empty string. Avalonia paints the editor
+		/// into a canvas, so the page cannot read the decompiled code from the DOM; the browser
+		/// smoke test (tools/e2e.mjs) uses this to check what was decompiled.
+		/// </summary>
+		[JSExport]
+		public static string GetDecompiledText()
+		{
+			var content = AppComposition.TryGetExport<DockWorkspace>()?.ActiveContentTabPage?.Content;
+			return (content as DecompilerTabPageModel)?.Text ?? string.Empty;
 		}
 	}
 }

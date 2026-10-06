@@ -73,7 +73,7 @@ async function fetchBinary(url, integrity) {
             throw new Error('HTTP ' + packed.status);
         }
         const { brotliDecode } = await import('./br.js');
-        const bytes = brotliDecode(new Uint8Array(await packed.arrayBuffer()));
+        const bytes = await brotliDecode(new Uint8Array(await packed.arrayBuffer()));
         const headers = { 'Content-Type': absolute.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream' };
         await cache?.put(absolute, new Response(bytes, { headers }));
         return new Response(bytes, { headers });
