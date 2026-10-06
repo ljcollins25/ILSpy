@@ -1,4 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!-- Relink the wasm runtime (smaller, trimmed native bits) without `dotnet workload install`:
+       build/NoWorkloadWasm.props fetches the WebAssembly toolchain packs from NuGet instead.
+       Set before the import: the props decide which packs to fetch from it.
+       The opt-in AOT build is -p:NoWorkloadWasmAot=true (see publish-browser.ps1 -Aot). -->
+  <PropertyGroup>
+    <WasmBuildNative>true</WasmBuildNative>
+  </PropertyGroup>
+  <Import Project="$(MSBuildThisFileDirectory)build/NoWorkloadWasm.props" />
   <PropertyGroup>
     <!-- net10.0-browser, not net11.0-browser: the .NET 11 preview wasm workload links with
          Emscripten 6.x + wasm exceptions, for which SkiaSharp (Avalonia's renderer) ships no
@@ -22,8 +30,9 @@
          turns on full trimming with the app assemblies rooted wholesale below. The custom
          switch exists because a global -p:PublishTrimmed leaks into the referenced
          netstandard2.0 projects, which cannot be trimmed (NETSDK1124).
-         Opt-in ahead-of-time compilation for publish: -p:RunAOTCompilation=true. -->
-    <_ILSpyBrowserTrimEffective Condition="'$(RunAOTCompilation)' == 'true' or '$(ILSpyBrowserTrim)' == 'true'">true</_ILSpyBrowserTrimEffective>
+         Opt-in ahead-of-time compilation for publish: -p:NoWorkloadWasmAot=true (workload-free; a
+         global -p:RunAOTCompilation=true would make the SDK ask for the uninstalled workload). -->
+    <_ILSpyBrowserTrimEffective Condition="'$(RunAOTCompilation)' == 'true' or '$(NoWorkloadWasmAot)' == 'true' or '$(ILSpyBrowserTrim)' == 'true'">true</_ILSpyBrowserTrimEffective>
     <PublishTrimmed Condition="'$(_ILSpyBrowserTrimEffective)' == 'true'">true</PublishTrimmed>
     <PublishTrimmed Condition="'$(_ILSpyBrowserTrimEffective)' != 'true'">false</PublishTrimmed>
     <!-- Trim-analysis warnings are numerous and third-party; this is an experimental
@@ -32,7 +41,7 @@
     <!-- After AOT compilation the IL bodies of AOT'd methods are dead weight in the
          managed assemblies; stripping them shrinks the assembly payload. Methods the AOT
          compiler skipped keep their IL and still run on the interpreter. -->
-    <WasmStripILAfterAOT Condition="'$(RunAOTCompilation)' == 'true'">true</WasmStripILAfterAOT>
+    <WasmStripILAfterAOT Condition="'$(RunAOTCompilation)' == 'true' or '$(NoWorkloadWasmAot)' == 'true'">true</WasmStripILAfterAOT>
   </PropertyGroup>
 
   <!-- Trimmer roots. AppComposition builds the MEF container from exactly ILSpy.dll +
