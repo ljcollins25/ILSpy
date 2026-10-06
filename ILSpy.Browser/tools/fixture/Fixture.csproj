@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A tiny assembly for the browser smoke test to open (tools/e2e.mjs builds it). Standalone: not part of any solution. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Fixture</AssemblyName>
+    <Deterministic>true</Deterministic>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+  </PropertyGroup>
+</Project>

@@ -18,7 +18,8 @@ export function serve(root, port = 0, prefix = '/webbox/ilspy') {
     const server = http.createServer((req, res) => {
         const url = new URL(req.url, 'http://x');
         let p = decodeURIComponent(url.pathname);
-        const record = status => log.push({ path: p, status });
+        const original = p;
+        const record = status => log.push({ path: original, status });
         if (p === prefix) { res.writeHead(301, { Location: prefix + '/' }); return res.end(); }
         if (!p.startsWith(prefix + '/')) { record(404); res.writeHead(404); return res.end('outside ' + prefix); }
         p = p.slice(prefix.length);

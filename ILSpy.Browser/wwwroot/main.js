@@ -125,6 +125,9 @@ try {
 // to the exported BrowserInterop.OpenFiles, which funnels into the normal open path.
 const interopExports = await dotnetRuntime.getAssemblyExports(config.mainAssemblyName);
 const vfs = dotnetRuntime.Module.FS;
+// Handle for the browser smoke test (tools/e2e.mjs): it reads the decompiled text back through this,
+// since the editor is painted into a canvas.
+globalThis.ilspyBrowser = interopExports.ICSharpCode.ILSpy.Browser.BrowserInterop;
 
 function uniqueUploadPath(name) {
     const dot = name.lastIndexOf('.');
